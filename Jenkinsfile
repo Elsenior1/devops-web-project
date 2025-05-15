@@ -20,6 +20,14 @@ pipeline {
                 sh 'mv target/*.war .'
             }
         }
+        stage('Check User') {
+    steps {
+        sh '''
+            whoami
+            groups
+        '''
+    }
+}
         stage('cleanup') {
           steps {
             sh 'docker system prune -a --volumes --force --filter "label=devops-web-project-server"'
