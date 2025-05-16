@@ -1,13 +1,14 @@
 pipeline {
     agent {
         node {
-            label 'dockerhost-build-server'
+        label 'dockerhost-build-server'
         }
+    }
+    tools {
+        maven 'maven-3.9.6'
     }
     environment {
         DOCKERHUB_CREDENTIALS = credentials('devops-dockerhub-token')
-        MAVEN_HOME = tool name: 'maven-3.9.6', type: 'hudson.tasks.Maven$MavenInstallation'
-        PATH = "${MAVEN_HOME}/bin:${env.PATH}"
     }
     stages {
         stage('Packaging') {
@@ -16,36 +17,31 @@ pipeline {
                 sh 'mvn clean package'
             }
         }
-        stage('Copying jar file') {
+        stage('Copying war file') {
             steps {
-                echo 'Copying jar file..'
-                sh 'mv target/*.jar .'
+                echo 'Copying war file..'
+                sh 'mv target/*.war .'
             }
         }
         stage('build image') {
-            steps {
-                echo 'Building Docker image...'
-                sh 'docker build -t nestoralvval/campaign-demo:v1 --label campaign-demo-server .'
-            }
+          steps {
+            sh 'docker build -t nestoralvval/devops-web-project:v1 --label devops-web-project-server .'
+          }
         }
         stage('Docker Hub Login') {
             steps {
-                echo 'Logging in to Docker Hub...'
                 sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
             }
         }
         stage('Push to Docker Hub') {
-            steps {
-                echo 'Pushing image to Docker Hub...'
-                sh 'docker push nestoralvval/campaign-demo:v1'
-            }
+          steps {
+            sh 'docker push nestoralvval/devops-web-project:v1'
+          }
         }
     }
     post {
         always {
-            echo 'Logging out from Docker Hub...'
             sh 'docker logout'
         }
     }
-}
-
+  }
