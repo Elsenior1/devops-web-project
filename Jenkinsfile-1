@@ -1,15 +1,15 @@
 pipeline {
     agent {
         node {
-        label 'dockerhost-build-server'
+            label 'dockerhost-build-server'
         }
     }
-    tools {
-        maven 'maven-3.9.6'
-    }
+
     environment {
+        PATH = "${tool 'maven-3.9.6'}/bin:${env.PATH}"
         DOCKERHUB_CREDENTIALS = credentials('devops-dockerhub-token')
     }
+
     stages {
         stage('Packaging') {
             steps {
@@ -17,31 +17,40 @@ pipeline {
                 sh 'mvn clean package'
             }
         }
+
         stage('Copying war file') {
             steps {
                 echo 'Copying war file..'
                 sh 'mv target/*.war .'
             }
         }
-        stage('build image') {
-          steps {
-            sh 'docker build -t nestoralvval/devops-web-project:v1 --label devops-web-project-server .'
-          }
+
+        stage('Build Image') {
+            steps {
+                echo 'Building Docker image...'
+                sh 'docker build -t nestoralvval/devops-web-project:v1 --label devops-web-project-server .'
+            }
         }
+
         stage('Docker Hub Login') {
             steps {
+                echo 'Logging into Docker Hub...'
                 sh 'echo $DOCKERHUB_CREDENTIALS_PSW | docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
             }
         }
+
         stage('Push to Docker Hub') {
-          steps {
-            sh 'docker push nestoralvval/devops-web-project:v1'
-          }
+            steps {
+                echo 'Pushing image to Docker Hub...'
+                sh 'docker push nestoralvval/devops-web-project:v1'
+            }
         }
     }
+
     post {
         always {
+            echo 'Logging out from Docker Hub...'
             sh 'docker logout'
         }
     }
-  }
+}
