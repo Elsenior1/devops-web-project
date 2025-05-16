@@ -6,26 +6,27 @@ pipeline {
     }
 
     environment {
-        PATH = "${tool 'maven-3.9.6'}/bin:${env.PATH}"
+        MAVEN_HOME = tool 'maven-3.9.6'
+        PATH = "${MAVEN_HOME}/bin:${env.PATH}"
         DOCKERHUB_CREDENTIALS = credentials('devops-dockerhub-token')
     }
 
     stages {
         stage('Packaging') {
             steps {
-                echo 'Packaging..'
+                echo 'Packaging...'
                 sh 'mvn clean package'
             }
         }
 
         stage('Copying war file') {
             steps {
-                echo 'Copying war file..'
+                echo 'Copying war file...'
                 sh 'mv target/*.war .'
             }
         }
 
-        stage('Build Image') {
+        stage('Build Docker Image') {
             steps {
                 echo 'Building Docker image...'
                 sh 'docker build -t nestoralvval/devops-web-project:v1 --label devops-web-project-server .'
@@ -41,7 +42,7 @@ pipeline {
 
         stage('Push to Docker Hub') {
             steps {
-                echo 'Pushing image to Docker Hub...'
+                echo 'Pushing Docker image...'
                 sh 'docker push nestoralvval/devops-web-project:v1'
             }
         }
@@ -49,7 +50,7 @@ pipeline {
 
     post {
         always {
-            echo 'Logging out from Docker Hub...'
+            echo 'Cleaning up...'
             sh 'docker logout'
         }
     }
